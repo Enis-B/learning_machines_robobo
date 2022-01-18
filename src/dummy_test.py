@@ -79,11 +79,12 @@ def main():
             outputs = net.activate(inputs)
             #print(outputs)
             for i in range(2):
-                outputs[i] = 20 * outputs[i]
+                outputs[i] = 15 * outputs[i]
             #print(outputs)
             #genome.fitness = 1 - max(inputs)
             #print("Proximity sensor: ", inputs)
-            genome.fitness = (outputs[0] + outputs[1]) * (1-abs(outputs[0]/20 - outputs[1]/20)) * (1 - max(inputs))
+            genome.fitness = abs(outputs[0] + outputs[1]) * (1-abs(outputs[0]/15 - outputs[1]/15)) * (1 - max(inputs))
+            print("Genome fitness: ", genome.fitness)
             print("LMS: ",outputs[0],"RMS: ",outputs[1])
             rob.move(outputs[0],outputs[1])
 
@@ -107,6 +108,24 @@ def main():
 
         # Display the winning genome.
         print('\nBest genome:\n{!s}'.format(winner))
+
+        ## Show output of the most fit genome against training data.
+        #print('\nOutput:')
+        #winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
+        #for xi, xo in zip(xor_inputs, xor_outputs):
+        #    output = winner_net.activate(xi)
+        #    print("input {!r}, expected output {!r}, got {!r}".format(xi, xo, output))
+
+        #node_names = {-1:'A', -2: 'B', 0:'A XOR B'}
+
+        #visualize.draw_net(config, winner, True, node_names=node_names)
+
+        visualize.draw_net(config, winner, True)
+        visualize.plot_stats(stats, ylog=False, view=True)
+        visualize.plot_species(stats, view=True)
+
+        #p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-4')
+        #p.run(eval_genomes, 10)
 
     run('src/config_file')
 
