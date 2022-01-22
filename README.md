@@ -1,3 +1,9 @@
+## Obstacle avoidance task
+
+Code for running simulation (train and validation) inside src/dummy_test.py , for real robot in src/hardware_bobo.py
+In order to run real robot the line "from .hardware import HardwareRobobo" in robobo/__init__.py must be uncommented.
+
+
 # ROS ROBOBO FOR LEARNING MACHINES
 
 Note, if you feel like not using this path but installing directly on your system, you are free to do it, but you are on your own.
