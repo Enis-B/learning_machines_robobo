@@ -24,15 +24,16 @@ def main():
     signal.signal(signal.SIGINT, terminate_program)
 
     ## Connect to ip of robobo
-
     rob = robobo.HardwareRobobo(camera=True).connect(address="10.0.0.199")
-    #rob = robobo.SimulationRobobo("#0").connect(address='172.29.0.1', port=19997)
 
+    '''
+    #rob = robobo.SimulationRobobo("#0").connect(address='172.29.0.1', port=19997)
+        
     #rob.play_simulation()
 
     #time.sleep(0.1)
     #print("ROB Irs: {}".format(np.log(np.array(rob.read_irs()))/10))
-    '''
+    
     # IR reading
     for i in range(1000000):
         for i in range(1):
@@ -164,8 +165,6 @@ def main():
         plt.savefig("Validation_fitness")
 
 
-
-
     def run(config_file):
         mode = 'test'
         if mode == 'test':
@@ -178,7 +177,6 @@ def main():
                                  neat.DefaultSpeciesSet, neat.DefaultStagnation,
                                  config_file)
             eval_genome(real_winner,config)
-
 
         else:
             # Load configuration.
@@ -202,6 +200,7 @@ def main():
             print('\nBest genome:\n{!s}'.format(winner))
             real_winner = stats.best_genome()
 
+            '''
             ## Show output of the most fit genome against training data.
             #print('\nOutput:')
             #winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
@@ -212,6 +211,8 @@ def main():
             #node_names = {-1:'A', -2: 'B', 0:'A XOR B'}
 
             #visualize.draw_net(config, winner, True, node_names=node_names)
+            '''
+
             #visualize.draw_net(config, winner, True)
             visualize.plot_stats_hardware(stats, ylog=False, view=True)
             #visualize.plot_species(stats, view=True)
@@ -226,7 +227,7 @@ def main():
 
     run('src/config_file')
 
-
+    '''
     # Following code moves the phone stand
     #rob.set_phone_pan(343, 100)
     #rob.set_phone_tilt(109, 100)
@@ -244,15 +245,16 @@ def main():
     #image = rob.get_image_front()
     # IMPORTANT! `image` returned by the simulator is BGR, not RGB
     #cv2.imwrite("test_pictures.png",image)
-
+    '''
     time.sleep(0.1)
 
+    '''
     # pause the simulation and read the collected food
     #rob.pause_simulation()
 
     # Stopping the simualtion resets the environment
     #rob.stop_world()
-
+    '''
 
 if __name__ == "__main__":
     main()

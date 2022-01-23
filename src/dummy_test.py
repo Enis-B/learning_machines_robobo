@@ -28,7 +28,7 @@ def main():
 
     rob.play_simulation()
 
-    #time.sleep(0.1)
+    time.sleep(0.3)
     #print("ROB Irs: {}".format(np.log(np.array(rob.read_irs()))/10))
     '''
     # IR reading
@@ -215,6 +215,7 @@ def main():
             ## Overall best genome
             real_winner = stats.best_genome()
 
+            '''
             ## Show output of the most fit genome against training data.
             #print('\nOutput:')
             #winner_net = neat.nn.FeedForwardNetwork.create(winner, config)
@@ -225,6 +226,7 @@ def main():
             #node_names = {-1:'A', -2: 'B', 0:'A XOR B'}
 
             #visualize.draw_net(config, winner, True, node_names=node_names)
+            '''
 
             # Plots for fitness, network and speciation
             visualize.draw_net(config, winner, True)
@@ -245,7 +247,7 @@ def main():
     ## run train or validation with neat config. file
     run('src/config_file')
 
-
+    '''
     # Following code moves the phone stand
     #rob.set_phone_pan(343, 100)
     #rob.set_phone_tilt(109, 100)
@@ -263,6 +265,7 @@ def main():
     #image = rob.get_image_front()
     # IMPORTANT! `image` returned by the simulator is BGR, not RGB
     #cv2.imwrite("test_pictures.png",image)
+    '''
 
     time.sleep(0.1)
 
