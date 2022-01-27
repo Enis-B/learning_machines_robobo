@@ -158,7 +158,7 @@ def main():
 
         genome.fitness = fitness
         print("Genome fitness: ", fitness)
-        plt.plot(fitness_list,range(5*eval_time))
+        plt.plot(range(5*eval_time),fitness_list)
         plt.ylabel("Fitness")
         plt.xlabel("Evaluations")
         plt.title("Fitness over time")
