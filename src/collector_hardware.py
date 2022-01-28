@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 from __future__ import print_function
-## Simulation robobo
+## hardware robobo
 import time
 import numpy as np
 
@@ -24,8 +24,8 @@ def main():
 
     signal.signal(signal.SIGINT, terminate_program)
 
-    #rob = robobo.HardwareRobobo(camera=True).connect(address="10.15.3.98")
-    rob = robobo.SimulationRobobo().connect(address='172.29.0.1', port=19997)
+    rob = robobo.HardwareRobobo(camera=True).connect(address="10.0.0.199")
+    #rob = robobo.SimulationRobobo().connect(address='172.29.0.1', port=19997)
 
     #time.sleep(0.3)
     #print("ROB Irs: {}".format(np.log(np.array(rob.read_irs()))/10))
@@ -90,6 +90,20 @@ def main():
         detector = cv2.SimpleBlobDetector_create(params)
     '''
 
+    '''
+    # Read image
+    im = cv2.imread("test_pictures.png", cv2.IMREAD_GRAYSCALE)
+    # Set up the detector with default parameters.
+    detector = cv2.SimpleBlobDetector()
+    # Detect blobs.
+    keypoints = detector.detect(im)
+    # Draw detected blobs as red circles.
+    # cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS ensures the size of the circle corresponds to the size of blob
+    im_with_keypoints = cv2.drawKeypoints(im, keypoints, np.array([]), (0,0,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+    # Show keypoints
+    cv2.imshow("Keypoints", im_with_keypoints)
+    cv2.waitKey(0)
+    '''
 
     # Hyperbolic Tangent (htan) Activation Function
     def htan(x):
@@ -109,8 +123,8 @@ def main():
             eval_time = 180
             net = neat.nn.FeedForwardNetwork.create(genome, config)
             #fitness = 0
-            rob.play_simulation()
-            rob.set_phone_tilt(75.97, 5)
+            #rob.play_simulation()
+            rob.set_phone_tilt(76, 5)
             for i in range(eval_time):
                 # Following code gets an image from the camera
                 image = rob.get_image_front()
@@ -126,40 +140,15 @@ def main():
                 #print(type(des),len(des),des)
                 #print(type(kp),len(kp),kp)
                 # draw only keypoints location,not size and orientation
-                img2 = cv2.drawKeypoints(img, kp, None, color=(0,255,0), flags=0)
-                cv2.imwrite("test_pictures_keypoints.png",img2)
+                #img2 = cv2.drawKeypoints(img, kp, None, color=(0,255,0), flags=0)
                 #plt.imshow(img2), plt.show()
-                cv2.imshow("Keypoints", img2)
-                cv2.waitKey(1)
-
-                # Read image
-                im = cv2.imread("test_pictures.png", cv2.IMREAD_GRAYSCALE)
-                # Set up the detector with default parameters.
-                detector = cv2.SimpleBlobDetector_create()
-                # Detect blobs.
-                keypoints = detector.detect(im)
-                # Draw detected blobs as red circles.
-                # cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS ensures the size of the circle corresponds to the size of blob
-                im_with_keypoints = cv2.drawKeypoints(im, keypoints, np.array([]), (0,0,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-                # Show keypoints
-                cv2.imshow("Blobs", im_with_keypoints)
-                cv2.waitKey(1)
-                #cv2.imwrite("test_pictures_blobs.png",im_with_keypoints)
-                #plt.imshow(im_with_keypoints), plt.show()
 
                 len_kp = [0]
 
                 if isinstance(kp, list):
                     len_kp = [len(kp)]
 
-                #inputs = np.array(len_kp) ## next: add sensors make it log 10 (?)
-
-                len_blobs = [0]
-
-                if keypoints:
-                    len_blobs = [len(keypoints)]
-
-                inputs = np.array(len_kp + len_blobs)
+                inputs = np.array(len_kp) ## next: add sensors make it log 10 (?)
 
                 '''
                 inputs = np.array([[0],[0],[0],[0],[0],[0],[0],[0]])
@@ -179,19 +168,17 @@ def main():
 
                 '''
                 ## input transformation
-                sensor_inputs = np.log(np.array(rob.read_irs()))/10
-                for i in range(len(sensor_inputs)):
-                    if math.isinf(sensor_inputs[i]):
-                        sensor_inputs[i] = 0
-                    if sensor_inputs[i] < 0:
-                        sensor_inputs[i] = abs(sensor_inputs[i] * 2)
-                    if sensor_inputs[i] > 1:
-                        sensor_inputs[i] = 1
-                print("ROB Irs: {}".format(sensor_inputs))
+                inputs = np.log(np.array(rob.read_irs()))/10
+                for i in range(len(inputs)):
+                    if math.isinf(inputs[i]):
+                        inputs[i] = 0
+                    if inputs[i] < 0:
+                        inputs[i] = abs(inputs[i] * 2)
+                    if inputs[i] > 1:
+                        inputs[i] = 1
+                print("ROB Irs: {}".format(inputs))
                 #print("ROB Irs: {}".format(inputs))
                 #new_inputs = np.append(inputs,np.array(len_kp))
-
-                inputs = np.concatenate([inputs,sensor_inputs])
                 '''
 
                 print("Keypoints: ",inputs)
@@ -201,7 +188,7 @@ def main():
                 #print(outputs)
 
                 ## setting max speed of motors
-                speed = 20
+                speed = 10
                 for i in range(2):
                     outputs[i] = speed * (outputs[i]) ## prev: 10 speed
                 #print(outputs)
@@ -235,14 +222,14 @@ def main():
 
             ## total fitness of genome
             # pause the simulation and read the collected food
-            rob.pause_simulation()
+            #rob.pause_simulation()
             ## Amound of food collected in the run
-            food = rob.collected_food()
-            genome.fitness = food
-            print("Genome fitness: ", genome.fitness)
+            #food = rob.collected_food()
+            #genome.fitness = food
+            #print("Genome fitness: ", genome.fitness)
             # Stopping the simualtion resets the environment
-            rob.stop_world()
-            rob.wait_for_stop()
+            #rob.stop_world()
+            #rob.wait_for_stop()
 
 
     ## evaluation of single genome
@@ -253,9 +240,19 @@ def main():
             eval_time = 180
             net = neat.nn.FeedForwardNetwork.create(genome, config)
             #fitness = 0
-            rob.play_simulation()
-            rob.set_phone_tilt(75.97, 5)
+            #rob.play_simulation()
+            rob.set_phone_tilt(140, 10)
             for i in range(eval_time):
+                '''
+                inputs = np.log(np.array(rob.read_irs()))/10
+                for i in range(len(inputs)):
+                    if math.isinf(inputs[i]):
+                        inputs[i] = 0
+                    if inputs[i] < 0:
+                        inputs[i] = abs(inputs[i] * 2)
+                    if inputs[i] > 1:
+                        inputs[i] = 1
+                '''
                 '''
                 #for i in range(len(inputs)):
                     #print(np.round(inputs[i]/3,1))
@@ -286,29 +283,22 @@ def main():
                 len_kp = [0]
 
                 if isinstance(kp, list):
-                    len_kp = [len(kp)]
+                    len_kp = [int(len(kp)/10)]## divide by 10, int
 
                 inputs = np.array(len_kp)
+
                 '''
-                ## input transformation
-                sensor_inputs = np.log(np.array(rob.read_irs()))/10
-                for i in range(len(sensor_inputs)):
-                    if math.isinf(sensor_inputs[i]):
-                        sensor_inputs[i] = 0
-                    if sensor_inputs[i] < 0:
-                        sensor_inputs[i] = abs(sensor_inputs[i] * 2)
-                    if sensor_inputs[i] > 1:
-                        sensor_inputs[i] = 1
-                print("ROB Irs: {}".format(sensor_inputs))
-                #print("ROB Irs: {}".format(inputs))
-                #new_inputs = np.append(inputs,np.array(len_kp))
-                inputs = np.concatenate([inputs,sensor_inputs])
+                for i in range(1,len(inputs)):
+                    #print(np.round(inputs[i]/4,1))
+                    #inputs[i] = np.round(inputs[i]/4,1)
+                    inputs[i] = np.round(np.true_divide(inputs,2),1)
+                #print("ROB Irs: {}".format(np.round(np.true_divide(inputs,4),1)))
                 '''
 
                 print("Keypoints: ",inputs)
                 outputs = net.activate(inputs)
                 #print(outputs)
-                speed = 25
+                speed = 35
                 for i in range(2):
                     outputs[i] = speed * (outputs[i]) ## prev: 10 speed
                 #print(outputs)
@@ -337,30 +327,30 @@ def main():
                 '''
             ## total fitness of genome
             # pause the simulation and read the collected food
-            rob.pause_simulation()
+            #rob.pause_simulation()
             ## Amound of food collected in the run
-            food = rob.collected_food()
-            genome.fitness = food
-            genome_list = genome_list + [genome.fitness]
-            print("Genome fitness: ", genome.fitness)
+            #food = rob.collected_food()
+            #genome.fitness = food
+            #genome_list = genome_list + [genome.fitness]
+            #print("Genome fitness: ", genome.fitness)
             # Stopping the simualtion resets the environment
-            rob.stop_world()
-            rob.wait_for_stop()
-        plt.boxplot(genome_list)
-        plt.title("Genome fitness over 5 runs")
-        plt.ylabel("Genome fitness")
-        plt.xlabel("Genome")
-        plt.show()
+            #rob.stop_world()
+            #rob.wait_for_stop()
+        #plt.boxplot(genome_list)
+        #plt.title("Genome fitness over 5 runs")
+        #plt.ylabel("Genome fitness")
+        #plt.xlabel("Genome")
+        #plt.show()
 
     def run(config_file):
         ## Choose between test or train
-        mode = 'train'
+        mode = 'test'
         if mode == 'test':
             ## Validation
 
             #p = neat.Checkpointer.restore_checkpoint('experiments/100pop_100gen_10s_nobackpenalty_0.5s/neat-checkpoint-98')
             #p.run(eval_genomes, 10)
-            with open ('experiments/collect_15sp_10pop_10gen_sensors/winner', 'rb') as fp:
+            with open ('experiments/collect_10sp_10pop_10gen/winner', 'rb') as fp:
                 real_winner = pickle.load(fp)
             # Load configuration.
             config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
