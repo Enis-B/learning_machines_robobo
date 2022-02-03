@@ -24,7 +24,7 @@ def main():
 
     signal.signal(signal.SIGINT, terminate_program)
 
-    rob = robobo.HardwareRobobo(camera=True).connect(address="10.0.0.199")
+    rob = robobo.HardwareRobobo(camera=True).connect(address="10.15.3.98")
     #rob = robobo.SimulationRobobo().connect(address='172.29.0.1', port=19997)
 
     #time.sleep(0.3)
@@ -241,7 +241,7 @@ def main():
             net = neat.nn.FeedForwardNetwork.create(genome, config)
             #fitness = 0
             #rob.play_simulation()
-            rob.set_phone_tilt(140, 10)
+            rob.set_phone_tilt(140, 20)
             for i in range(eval_time):
                 '''
                 inputs = np.log(np.array(rob.read_irs()))/10
@@ -280,12 +280,42 @@ def main():
                 # draw only keypoints location,not size and orientation
                 #img2 = cv2.drawKeypoints(img, kp, None, color=(0,255,0), flags=0)
                 #plt.imshow(img2), plt.show()
+                #plt.savefig("Keypoints_hardware.png")
+
+                '''
+                # Read image
+                im = cv2.imread("test_pictures.png", cv2.IMREAD_GRAYSCALE)
+                # Set up the detector with default parameters.
+                detector = cv2.SimpleBlobDetector_create()
+                # Detect blobs.
+                keypoints = detector.detect(im)
+                # Draw detected blobs as red circles.
+                # cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS ensures the size of the circle corresponds to the size of blob
+                im_with_keypoints = cv2.drawKeypoints(im, keypoints, np.array([]), (0,0,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+                # Show keypoints
+                #cv2.imshow("Blobs", im_with_keypoints)
+                #cv2.waitKey(1)
+                #cv2.imwrite("test_pictures_blobs.png",im_with_keypoints)
+                plt.imshow(im_with_keypoints), plt.show()
+                plt.savefig("Blobs_hardware.png")
+                '''
+
                 len_kp = [0]
 
                 if isinstance(kp, list):
                     len_kp = [int(len(kp)/10)]## divide by 10, int
 
+                '''
+                len_blobs = [0]
+
+                if keypoints:
+                    len_blobs = [len(keypoints)]
+
+                inputs = np.array(len_kp + len_blobs)
+                '''
+
                 inputs = np.array(len_kp)
+
 
                 '''
                 for i in range(1,len(inputs)):
@@ -295,10 +325,10 @@ def main():
                 #print("ROB Irs: {}".format(np.round(np.true_divide(inputs,4),1)))
                 '''
 
-                print("Keypoints: ",inputs)
+                #print("Keypoints: ",inputs)
                 outputs = net.activate(inputs)
                 #print(outputs)
-                speed = 35
+                speed = 60
                 for i in range(2):
                     outputs[i] = speed * (outputs[i]) ## prev: 10 speed
                 #print(outputs)
@@ -306,7 +336,7 @@ def main():
                 #print("Proximity sensor: ", inputs)
                 ## 1s
                 rob.move(int(outputs[0]),int(outputs[1]),500)
-                print("LMS: ",int(outputs[0]),"RMS: ",int(outputs[1]))
+                #print("LMS: ",int(outputs[0]),"RMS: ",int(outputs[1]))
                 ## prev: disable backward penalty
                 '''
                 if outputs[0] < 0:
@@ -350,7 +380,7 @@ def main():
 
             #p = neat.Checkpointer.restore_checkpoint('experiments/100pop_100gen_10s_nobackpenalty_0.5s/neat-checkpoint-98')
             #p.run(eval_genomes, 10)
-            with open ('experiments/collect_10sp_10pop_10gen/winner', 'rb') as fp:
+            with open ('experiments/collect_10sp_10pop_10gen_orbs/winner', 'rb') as fp:
                 real_winner = pickle.load(fp)
             # Load configuration.
             config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
@@ -428,7 +458,7 @@ def main():
 
     '''
 
-    time.sleep(0.1)
+    #time.sleep(0.1)
 
 
 

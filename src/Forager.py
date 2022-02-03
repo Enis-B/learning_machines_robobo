@@ -106,17 +106,20 @@ def main():
     ## function for evaluation of genomes of population
     def eval_genomes(genomes, config):
         for genome_id, genome in genomes:
-            eval_time = 180
+            eval_time = 120
             net = neat.nn.FeedForwardNetwork.create(genome, config)
-            #fitness = 0
+            fitness = 0
             rob.play_simulation()
-            rob.set_phone_tilt(75.97, 5)
+            rob.set_phone_tilt(76.30, 5) ## 76.71
             for i in range(eval_time):
                 # Following code gets an image from the camera
                 image = rob.get_image_front()
                 # IMPORTANT! `image` returned by the simulator is BGR, not RGB
                 cv2.imwrite("test_pictures.png",image)
-                img = cv2.imread('test_pictures.png',0)
+
+                '''
+                ## ORB Detection
+                img = cv2.imread('test_pictures.png',-1)
                 # Initiate ORB detector
                 orb = cv2.ORB_create()
                 # find the keypoints with ORB
@@ -131,12 +134,51 @@ def main():
                 #plt.imshow(img2), plt.show()
                 cv2.imshow("Keypoints", img2)
                 cv2.waitKey(1)
-
                 '''
+
+                ## Blob Detection
                 # Read image
-                im = cv2.imread("test_pictures.png", cv2.IMREAD_GRAYSCALE)
+                im = cv2.imread("test_pictures.png", -1)
                 # Set up the detector with default parameters.
                 detector = cv2.SimpleBlobDetector_create()
+
+                '''
+                # Setup SimpleBlobDetector parameters.
+                params = cv2.SimpleBlobDetector_Params()
+
+                # Change thresholds
+                params.minThreshold = 10
+                params.maxThreshold = 200
+
+                # Filter by Area.
+                params.filterByArea = True
+                params.minArea = 100
+
+                # Filter by Circularity
+                params.filterByCircularity = True
+                params.minCircularity = 0.1
+                params.maxCircularity = 0.785
+
+                # Filter by Convexity
+                params.filterByConvexity = True
+                params.minConvexity = 0.87
+
+                # Filter by Inertia
+                params.filterByInertia = True
+                params.minInertiaRatio = 0.01
+
+                # Filter by Color
+                params.filterByColor = True
+                params.blobColor = 255
+
+                # Create a detector with the parameters
+                ver = (cv2.__version__).split('.')
+                if int(ver[0]) < 3 :
+                    detector = cv2.SimpleBlobDetector(params)
+                else :
+                    detector = cv2.SimpleBlobDetector_create(params)
+                '''
+
                 # Detect blobs.
                 keypoints = detector.detect(im)
                 # Draw detected blobs as red circles.
@@ -147,23 +189,24 @@ def main():
                 cv2.waitKey(1)
                 #cv2.imwrite("test_pictures_blobs.png",im_with_keypoints)
                 #plt.imshow(im_with_keypoints), plt.show()
-                '''
 
+                '''
                 len_kp = [0]
 
                 if isinstance(kp, list):
                     len_kp = [len(kp)]
 
-                inputs = np.array(len_kp) ## next: add sensors make it log 10 (?)
-
+                #inputs = np.array(len_kp) ## next: add sensors make it log 10 (?)
                 '''
+
                 len_blobs = [0]
             
                 if keypoints:
                     len_blobs = [len(keypoints)]
 
-                inputs = np.array(len_kp + len_blobs)
-                '''
+                inputs = np.array(len_blobs)
+
+                #inputs = np.array(len_kp + len_blobs)
 
                 '''
                 inputs = np.array([[0],[0],[0],[0],[0],[0],[0],[0]])
@@ -191,21 +234,21 @@ def main():
                         sensor_inputs[i] = abs(sensor_inputs[i] * 2)
                     if sensor_inputs[i] > 1:
                         sensor_inputs[i] = 1
-                print("ROB Irs: {}".format(sensor_inputs))
+                #print("ROB Irs: {}".format(sensor_inputs))
                 #print("ROB Irs: {}".format(inputs))
                 #new_inputs = np.append(inputs,np.array(len_kp))
 
                 inputs = np.concatenate([inputs,sensor_inputs])
                 '''
 
-                print("Keypoints: ",inputs)
+                print("Inputs: ",inputs)
 
                 ## Getting output from input after feeding it to the network
                 outputs = net.activate(inputs)
                 #print(outputs)
 
                 ## setting max speed of motors
-                speed = 20
+                speed = 40
                 for i in range(2):
                     outputs[i] = speed * (outputs[i]) ## prev: 10 speed
                 #print(outputs)
@@ -218,6 +261,43 @@ def main():
                 print("LMS: ",int(outputs[0]),"RMS: ",int(outputs[1]))
                 ## prev: disable backward penalty
 
+                rob_position = rob.position()
+                print("robobo is at {}".format(rob_position))
+                base_position = rob.base_position()
+                print("Base position: ", base_position)
+                food_position = rob.food_position()
+                print("Food position: ", food_position)
+
+
+                pos_diff_food = [0,0,0]
+                for i in range(3):
+                    pos_diff_food[i] = abs(rob_position[i] - food_position[i])
+
+                sum_diff_food = sum(pos_diff_food)
+
+
+                if sum_diff_food > 0:
+                    sum_diff_food = -sum_diff_food
+
+                pos_diff_base = [0,0,0]
+                for i in range(3):
+                    pos_diff_base[i] = abs(base_position[i] - food_position[i])
+
+                sum_diff_base = sum(pos_diff_base)
+
+                if sum_diff_base > 0:
+                    sum_diff_base = -sum_diff_base
+
+                sum_diff = sum_diff_base + sum_diff_food
+
+                fitness += sum_diff #* len(kp) * len(keypoints) * max(sensor_inputs)
+                print("Fitness: ",fitness,"\n")
+
+                foraged = rob.base_detects_food()
+
+                if foraged:
+                    fitness = 0
+                    break
                 '''
                 ## output transformation
                 if outputs[0] < 0:
@@ -239,10 +319,10 @@ def main():
 
             ## total fitness of genome
             # pause the simulation and read the collected food
-            rob.pause_simulation()
+            #rob.pause_simulation()
             ## Amound of food collected in the run
-            food = rob.collected_food()
-            genome.fitness = food
+            #food = rob.collected_food()
+            genome.fitness = fitness
             print("Genome fitness: ", genome.fitness)
             # Stopping the simualtion resets the environment
             rob.stop_world()
@@ -254,11 +334,11 @@ def main():
         genome_list = []
         for i in range(5):
             #fitness_list = []
-            eval_time = 180
+            eval_time = 120
             net = neat.nn.FeedForwardNetwork.create(genome, config)
-            #fitness = 0
+            fitness = 0
             rob.play_simulation()
-            rob.set_phone_tilt(75.97, 5)
+            rob.set_phone_tilt(76.31, 5)
             for i in range(eval_time):
                 '''
                 #for i in range(len(inputs)):
@@ -277,7 +357,8 @@ def main():
                 image = rob.get_image_front()
                 # IMPORTANT! `image` returned by the simulator is BGR, not RGB
                 cv2.imwrite("test_pictures.png",image)
-                img = cv2.imread('test_pictures.png',0)
+
+                img = cv2.imread('test_pictures.png',-1)
                 # Initiate ORB detector
                 orb = cv2.ORB_create()
                 # find the keypoints with ORB
@@ -290,9 +371,9 @@ def main():
                 cv2.imshow("Keypoints", img2)
                 cv2.waitKey(1)
 
-                '''
+
                 # Read image
-                im = cv2.imread("test_pictures.png", cv2.IMREAD_GRAYSCALE)
+                im = cv2.imread("test_pictures.png", -1)
                 # Set up the detector with default parameters.
                 detector = cv2.SimpleBlobDetector_create()
                 # Detect blobs.
@@ -305,12 +386,24 @@ def main():
                 cv2.waitKey(1)
                 #cv2.imwrite("test_pictures_blobs.png",im_with_keypoints)
                 #plt.imshow(im_with_keypoints), plt.show()
-                '''
+
 
                 len_kp = [0]
 
                 if isinstance(kp, list):
                     len_kp = [len(kp)]
+
+                #inputs = np.array(len_kp)
+
+
+                len_blobs = [0]
+
+                if keypoints:
+                    len_blobs = [len(keypoints)]
+
+                #inputs = np.array(len_blobs)
+
+                inputs = np.array(len_kp + len_blobs)
 
                 '''
                 ## input transformation
@@ -328,20 +421,10 @@ def main():
                 inputs = np.concatenate([inputs,sensor_inputs])
                 '''
 
-                '''
-                len_blobs = [0]
-
-                if keypoints:
-                    len_blobs = [len(keypoints)]
-
-                inputs = np.array(len_kp + len_blobs)
-                '''
-
-                inputs = np.array(len_kp)
                 print("Keypoints: ",inputs)
                 outputs = net.activate(inputs)
                 #print(outputs)
-                speed = 25
+                speed = 50
                 for i in range(2):
                     outputs[i] = speed * (outputs[i]) ## prev: 10 speed
                 #print(outputs)
@@ -368,12 +451,51 @@ def main():
                 print("fitness: ", fitness)
                 fitness_list.append(fitness)
                 '''
+
+                rob_position = rob.position()
+                print("robobo is at {}".format(rob_position))
+                base_position = rob.base_position()
+                print("Base position: ", base_position)
+                food_position = rob.food_position()
+                print("Food position: ", food_position)
+
+
+                pos_diff_food = [0,0,0]
+                for i in range(3):
+                    pos_diff_food[i] = abs(rob_position[i] - food_position[i])
+
+                sum_diff_food = sum(pos_diff_food)
+
+
+                if sum_diff_food > 0:
+                    sum_diff_food = -sum_diff_food
+
+                pos_diff_base = [0,0,0]
+                for i in range(3):
+                    pos_diff_base[i] = abs(base_position[i] - food_position[i])
+
+                sum_diff_base = sum(pos_diff_base)
+
+                if sum_diff_base > 0:
+                    sum_diff_base = -sum_diff_base
+
+                sum_diff = sum_diff_base + sum_diff_food
+
+                fitness += sum_diff #* len(kp) * len(keypoints) * max(sensor_inputs)
+                print("Fitness: ",fitness,"\n")
+
+                foraged = rob.base_detects_food()
+                print("Foraged: ", foraged)
+
+                if foraged:
+                    fitness = 0
+                    break
             ## total fitness of genome
             # pause the simulation and read the collected food
-            rob.pause_simulation()
+            #rob.pause_simulation()
             ## Amound of food collected in the run
-            food = rob.collected_food()
-            genome.fitness = food
+            #food = rob.collected_food()
+            genome.fitness = fitness
             genome_list = genome_list + [genome.fitness]
             print("Genome fitness: ", genome.fitness)
             # Stopping the simualtion resets the environment
@@ -383,6 +505,7 @@ def main():
         plt.title("Genome fitness over 5 runs")
         plt.ylabel("Genome fitness")
         plt.xlabel("Genome")
+        plt.ylim([-450, 50])
         plt.show()
 
     def run(config_file):
@@ -393,7 +516,7 @@ def main():
 
             #p = neat.Checkpointer.restore_checkpoint('experiments/100pop_100gen_10s_nobackpenalty_0.5s/neat-checkpoint-98')
             #p.run(eval_genomes, 10)
-            with open ('experiments/collect_10sp_10pop_10gen_orbs/winner', 'rb') as fp:
+            with open ('experiments/forager_10pop_10gen_40sp_blob_orb_120eval/winner', 'rb') as fp:
                 real_winner = pickle.load(fp)
             # Load configuration.
             config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
