@@ -24,8 +24,9 @@ def main():
 
     signal.signal(signal.SIGINT, terminate_program)
 
-    #rob = robobo.HardwareRobobo(camera=True).connect(address="10.15.3.98")
-    rob = robobo.SimulationRobobo().connect(address='172.28.192.1', port=19997)
+    rob = robobo.HardwareRobobo(camera=True).connect(address="10.15.3.209")
+    #rob = robobo.HardwareRobobo(camera=True).connect(address="10.0.0.199")
+    #rob = robobo.SimulationRobobo().connect(address='172.28.192.1', port=19997)
 
     #time.sleep(0.3)
     #print("ROB Irs: {}".format(np.log(np.array(rob.read_irs()))/10))
@@ -106,13 +107,12 @@ def main():
     ## function for evaluation of genomes of population
     def eval_genomes(genomes, config):
         for genome_id, genome in genomes:
-            eval_time = 60
+            eval_time = 120
             net = neat.nn.FeedForwardNetwork.create(genome, config)
             fitness = 0
             rob.play_simulation()
             rob.set_phone_tilt(76.31, 5) ## 76.71
             for i in range(eval_time):
-                time.sleep(0.1)
                 # Following code gets an image from the camera
                 image = rob.get_image_front()
                 # IMPORTANT! `image` returned by the simulator is BGR, not RGB
@@ -137,32 +137,9 @@ def main():
                 cv2.waitKey(1)
                 '''
 
-                '''
-                ## HSV green-red mask
-                hsv= cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-
-                lower_green = np.array([66,105, 70])
-                upper_green = np.array([112, 255, 255])
-
-                lower_red = np.array([240,70, 70])
-                upper_red = np.array([255, 255, 255])
-
-                lower_red_2 = np.array([0,70, 70])
-                upper_red_2 = np.array([12, 255, 255])
-
-                mask_green = cv2.inRange(hsv, lower_green, upper_green)
-                mask_red = cv2.inRange(hsv, lower_red,upper_red)
-                mask_red_2 = cv2.inRange(hsv, lower_red_2,upper_red_2)
-
-                mask = mask_green + mask_red + mask_red_2
-                res = cv2.bitwise_and(image, image, mask=mask)
-
-                cv2.imwrite("hsv_res_sim.png",res)
-                '''
-
                 ## Blob Detection
                 # Read image
-                im = cv2.imread("test_pictures.png", 0)
+                im = cv2.imread("test_pictures.png", -1)
                 # Set up the detector with default parameters.
                 detector = cv2.SimpleBlobDetector_create()
 
@@ -174,14 +151,13 @@ def main():
                 params.minThreshold = 10
                 params.maxThreshold = 200
 
-                
                 # Filter by Area.
                 params.filterByArea = True
-                params.minArea = 10
+                params.minArea = 100
 
                 # Filter by Circularity
                 params.filterByCircularity = True
-                params.minCircularity = 0.785
+                params.minCircularity = 0.1
                 params.maxCircularity = 0.785
 
                 # Filter by Convexity
@@ -191,7 +167,7 @@ def main():
                 # Filter by Inertia
                 params.filterByInertia = True
                 params.minInertiaRatio = 0.01
-                    
+
                 # Filter by Color
                 params.filterByColor = True
                 params.blobColor = 255
@@ -206,15 +182,6 @@ def main():
 
                 # Detect blobs.
                 keypoints = detector.detect(im)
-                #print("KP :", cv2.KeyPoint_convert(keypoints))
-
-                '''
-                for i in range(len(keypoints)):
-                    print("KP x: ", keypoints[i].pt[0])
-                    print("KP y: ", keypoints[i].pt[1])
-                    print("KP size: ", keypoints[i].size)
-                '''
-
                 # Draw detected blobs as red circles.
                 # cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS ensures the size of the circle corresponds to the size of blob
                 im_with_keypoints = cv2.drawKeypoints(im, keypoints, np.array([]), (0,0,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
@@ -233,22 +200,14 @@ def main():
                 #inputs = np.array(len_kp) ## next: add sensors make it log 10 (?)
                 '''
 
-                '''
                 len_blobs = [0]
-            
+
                 if keypoints:
                     len_blobs = [len(keypoints)]
-                
-                 #inputs = np.array(len_kp + len_blobs)
-                '''
-                ## Get first keypoint coordinates
-                if keypoints:
-                    key_list = [keypoints[0].pt[0],keypoints[0].pt[1]]
-                else:
-                    key_list = [0,0]
-                key_arr = np.array(key_list)
 
-                inputs = np.array(key_arr)
+                inputs = np.array(len_blobs)
+
+                #inputs = np.array(len_kp + len_blobs)
 
                 '''
                 inputs = np.array([[0],[0],[0],[0],[0],[0],[0],[0]])
@@ -279,7 +238,7 @@ def main():
                 #print("ROB Irs: {}".format(sensor_inputs))
                 #print("ROB Irs: {}".format(inputs))
                 #new_inputs = np.append(inputs,np.array(len_kp))
-                
+
                 inputs = np.concatenate([inputs,sensor_inputs])
                 '''
 
@@ -290,7 +249,7 @@ def main():
                 #print(outputs)
 
                 ## setting max speed of motors
-                speed = 35
+                speed = 40
                 for i in range(2):
                     outputs[i] = speed * (outputs[i]) ## prev: 10 speed
                 #print(outputs)
@@ -310,7 +269,7 @@ def main():
                 food_position = rob.food_position()
                 print("Food position: ", food_position)
 
-                ## Calculate fitness function according to robot,food,base position in simulation
+
                 pos_diff_food = [0,0,0]
                 for i in range(3):
                     pos_diff_food[i] = abs(rob_position[i] - food_position[i])
@@ -335,7 +294,6 @@ def main():
                 fitness += sum_diff #* len(kp) * len(keypoints) * max(sensor_inputs)
                 print("Fitness: ",fitness,"\n")
 
-                ## If food reaches base, get max fitness value
                 foraged = rob.base_detects_food()
 
                 if foraged:
@@ -379,9 +337,9 @@ def main():
             #fitness_list = []
             eval_time = 120
             net = neat.nn.FeedForwardNetwork.create(genome, config)
-            fitness = 0
-            rob.play_simulation()
-            rob.set_phone_tilt(76.31, 5)
+            fitness = -1
+            #rob.play_simulation()
+            rob.set_phone_tilt(180, 100)
             for i in range(eval_time):
                 '''
                 #for i in range(len(inputs)):
@@ -396,14 +354,38 @@ def main():
                 #print("ROB Irs: {}".format(inputs))
                 #print("ROB Irs: {}".format(inputs))
                 '''
-                time.sleep(0.1)
                 # Following code gets an image from the camera
+                time.sleep(0.1)
                 image = rob.get_image_front()
                 # IMPORTANT! `image` returned by the simulator is BGR, not RGB
                 cv2.imwrite("test_pictures.png",image)
 
+                ## HSV green, red mask (image filtering)
+                hsv= cv2.cvtColor( image, cv2.COLOR_BGR2HSV)
+
+                lower_green = np.array([66,105, 70])
+                upper_green = np.array([112, 255, 255])
+
+                lower_red = np.array([240,70, 70])
+                upper_red = np.array([255, 255, 255])
+
+                lower_red_2 = np.array([0,70, 70])
+                upper_red_2 = np.array([12, 255, 255])
+
+                mask_green = cv2.inRange(hsv, lower_green, upper_green)
+                mask_red = cv2.inRange(hsv, lower_red,upper_red)
+                mask_red_2 = cv2.inRange(hsv, lower_red_2,upper_red_2)
+
+                mask = mask_green + mask_red + mask_red_2
+                res = cv2.bitwise_and(image, image, mask=mask)
+
+                cv2.imwrite("hsv_res.png",res)
+                #cv2.imshow('res1.png', res)
+                #cv2.waitKey(0)
+
+
                 '''
-                img = cv2.imread('test_pictures.png',0)
+                img = cv2.imread('hsv_res.png',-1)
                 # Initiate ORB detector
                 orb = cv2.ORB_create()
                 # find the keypoints with ORB
@@ -411,24 +393,24 @@ def main():
                 # compute the descriptors with ORB
                 kp, des = orb.compute(img, kp)
                 # draw only keypoints location,not size and orientation
-                img2 = cv2.drawKeypoints(img, kp, None, color=(0,255,0), flags=0)
+                #img2 = cv2.drawKeypoints(img, kp, None, color=(0,255,0), flags=0)
                 #plt.imshow(img2), plt.show()
-                cv2.imshow("Keypoints", img2)
-                cv2.waitKey(1)
+                #cv2.imshow("Keypoints", img2)
+                #cv2.waitKey(1)
                 '''
 
                 # Read image
-                im = cv2.imread("test_pictures.png", 0)
+                im = cv2.imread("test_pictures.png", -1)
                 # Set up the detector with default parameters.
                 detector = cv2.SimpleBlobDetector_create()
                 # Detect blobs.
                 keypoints = detector.detect(im)
                 # Draw detected blobs as red circles.
                 # cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS ensures the size of the circle corresponds to the size of blob
-                im_with_keypoints = cv2.drawKeypoints(im, keypoints, np.array([]), (0,0,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+                #im_with_keypoints = cv2.drawKeypoints(im, keypoints, np.array([]), (0,0,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
                 # Show keypoints
-                cv2.imshow("Blobs", im_with_keypoints)
-                cv2.waitKey(1)
+                #cv2.imshow("Blobs", im_with_keypoints)
+                #cv2.waitKey(1)
                 #cv2.imwrite("test_pictures_blobs.png",im_with_keypoints)
                 #plt.imshow(im_with_keypoints), plt.show()
 
@@ -436,10 +418,10 @@ def main():
                 len_kp = [0]
 
                 if isinstance(kp, list):
-                    len_kp = [len(kp)]
+                    len_kp = [int(len(kp)/10)]
+                    #len_kp = [len(kp)]
 
                 #inputs = np.array(len_kp)
-
 
                 len_blobs = [0]
 
@@ -451,14 +433,14 @@ def main():
                 inputs = np.array(len_kp + len_blobs)
                 '''
 
+                ## Get first keypoint position (x,y) + blob size, divide by factor to make similar to sim.
                 if keypoints:
-                    key_list = [keypoints[0].pt[0],keypoints[0].pt[1],keypoints[0].size]
+                    key_list = [keypoints[0].pt[0]/3.75,keypoints[0].pt[1]/5,keypoints[0].size]
                 else:
                     key_list = [0,0,0]
                 key_arr = np.array(key_list)
 
                 inputs = np.array(key_arr)
-
 
                 '''
                 ## input transformation
@@ -476,7 +458,7 @@ def main():
                 inputs = np.concatenate([inputs,sensor_inputs])
                 '''
 
-                print("Keypoints: ",inputs)
+                print("Inputs: ",inputs)
                 outputs = net.activate(inputs)
                 #print(outputs)
                 speed = 30
@@ -507,14 +489,15 @@ def main():
                 fitness_list.append(fitness)
                 '''
 
+                '''
                 rob_position = rob.position()
                 print("robobo is at {}".format(rob_position))
                 base_position = rob.base_position()
                 print("Base position: ", base_position)
                 food_position = rob.food_position()
                 print("Food position: ", food_position)
-
-
+                '''
+                '''
                 pos_diff_food = [0,0,0]
                 for i in range(3):
                     pos_diff_food[i] = abs(rob_position[i] - food_position[i])
@@ -545,23 +528,31 @@ def main():
                 if foraged:
                     fitness = 0
                     break
+                '''
+
+            '''
             ## total fitness of genome
             # pause the simulation and read the collected food
             #rob.pause_simulation()
             ## Amound of food collected in the run
             #food = rob.collected_food()
+            '''
             genome.fitness = fitness
+            '''
             genome_list = genome_list + [genome.fitness]
             print("Genome fitness: ", genome.fitness)
             # Stopping the simualtion resets the environment
             rob.stop_world()
             rob.wait_for_stop()
+            '''
+        '''
         plt.boxplot(genome_list)
         plt.title("Genome fitness over 5 runs")
         plt.ylabel("Genome fitness")
         plt.xlabel("Genome")
         plt.ylim([-500, 50])
         plt.show()
+        '''
 
     def run(config_file):
         ## Choose between test or train
@@ -637,7 +628,7 @@ def main():
             '''
 
     ## run train or validation with neat config. file
-    run('src/config_file')
+    run('src/config_file_hardware')
 
     '''
 
@@ -649,7 +640,7 @@ def main():
 
     '''
 
-    time.sleep(0.1)
+    #time.sleep(0.1)
 
 
 

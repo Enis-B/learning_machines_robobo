@@ -1,11 +1,16 @@
 ## Obstacle avoidance task
 
-Code for running simulation (train and validation) inside src/dummy_test.py , for real robot in src/hardware_bobo.py
-In order to run real robot the line "from .hardware import HardwareRobobo" in robobo/__init__.py must be uncommented.
+Code for running simulation (train and validation) inside src/dummy_test.py , for real robot in src/hardware_bobo.py.
 
 ## Foraging (Collect food)
 
-Code for running simulation (train and validation) inside src/Collector.py, for real robot in src/collector_hardware.py
+Code for running simulation (train and validation) inside src/Collector.py, for real robot in src/collector_hardware.py.
+
+## Foraging (Collect food, bring to base)
+
+Code for running simulation (train and validation) inside src/Forager.py, for real robot in src/Forager_hardware.py.
+
+## Note to running real robot
 In order to run real robot the line "from .hardware import HardwareRobobo" in robobo/__init__.py must be uncommented.
 
 # ROS ROBOBO FOR LEARNING MACHINES
